@@ -573,7 +573,17 @@
         // Update system metrics from real API
         async function updateMetrics() {
             try {
-                const response = await fetch('/api/metrics');
+                // Try different API URLs based on environment
+                const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                    ? 'http://localhost:3001/api/metrics' 
+                    : '/api/metrics';
+                    
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
                 const data = await response.json();
                 
                 // CPU Metrics
@@ -725,6 +735,10 @@
         
         function drawMiniChart(canvasId, data, color) {
             const canvas = document.getElementById(canvasId);
+            if (!canvas || !canvas.getContext) {
+                console.warn(`Canvas ${canvasId} not available, skipping chart`);
+                return;
+            }
             const ctx = canvas.getContext('2d');
             
             // Set canvas size
@@ -820,22 +834,28 @@ def987654321   redis:alpine   "redis-server"           4 hours ago     Up 4 hour
         updateMetrics();
         setInterval(updateMetrics, 2000); // Update every 2 seconds
         
-        // Check if server is running
-        fetch('/api/metrics')
+        // Check if server is running and show appropriate status
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const apiUrl = isLocalhost ? 'http://localhost:3001/api/metrics' : '/api/metrics';
+        
+        fetch(apiUrl)
             .then(response => {
                 if (!response.ok) {
                     console.warn('Backend server not available, using simulated data');
-                    // Fallback to simulated data if server is not available
-                    setInterval(() => {
-                        const cpuUsage = Math.random() * 100;
-                        const ramPercent = Math.random() * 100;
-                        document.getElementById('last-update').textContent = 'Simulated data';
-                    }, 2000);
+                    if (isLocalhost) {
+                        console.warn('Make sure to run: npm start (to start the backend server)');
+                    } else {
+                        console.warn('Backend not available on static hosting, using simulated data');
+                    }
+                    // Set status text for simulated data
+                    setTimeout(() => {
+                        document.getElementById('last-update').textContent = isLocalhost ? 'Start server with: npm start' : 'Simulated data (static hosting)';
+                    }, 3000);
                 }
             })
             .catch(() => {
                 console.warn('Backend server not available, using simulated data');
-                document.getElementById('last-update').textContent = 'Server offline - Simulated data';
+                document.getElementById('last-update').textContent = isLocalhost ? 'Start server: npm start' : 'Simulated data';
             });
         
         // Add some random variation for realism
