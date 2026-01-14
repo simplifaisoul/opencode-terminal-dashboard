@@ -1,0 +1,25 @@
+{
+  "name": "terminal-dashboard-server",
+  "version": "1.0.0",
+  "description": "Real-time system monitoring backend for terminal dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "system-monitoring",
+    "terminal",
+    "dashboard",
+    "real-time",
+    "metrics"
+  ],
+  "author": "Opencode AI",
+  "license": "MIT"
+}

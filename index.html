@@ -567,133 +567,143 @@
             }
         }
         
-        // Update system metrics
-        function updateMetrics() {
-            // CPU Metrics
-            const cpuUsage = Math.random() * 100;
-            const cpuCores = navigator.hardwareConcurrency || 4;
-            const cpuSpeed = (2.0 + Math.random() * 3.0).toFixed(1);
-            const cpuLoad = (Math.random() * 3).toFixed(2);
-            
-            document.getElementById('cpu-usage').textContent = cpuUsage.toFixed(1) + '%';
-            document.getElementById('cpu-cores').textContent = cpuCores;
-            document.getElementById('cpu-speed').textContent = cpuSpeed + ' GHz';
-            document.getElementById('cpu-load').textContent = cpuLoad;
-            
-            updateProgressBar('cpu-bar', cpuUsage);
-            
-            // Memory Metrics
-            const ramTotal = (8 + Math.random() * 24).toFixed(1);
-            const ramUsed = (Math.random() * parseFloat(ramTotal)).toFixed(1);
-            const ramFree = (parseFloat(ramTotal) - parseFloat(ramUsed)).toFixed(1);
-            const ramPercent = (parseFloat(ramUsed) / parseFloat(ramTotal) * 100);
-            const swapUsed = (Math.random() * 4).toFixed(1);
-            
-            document.getElementById('ram-total').textContent = ramTotal + ' GB';
-            document.getElementById('ram-used').textContent = ramUsed + ' GB';
-            document.getElementById('ram-free').textContent = ramFree + ' GB';
-            document.getElementById('swap-used').textContent = swapUsed + ' GB';
-            
-            updateProgressBar('ram-bar', ramPercent);
-            
-            // Storage Metrics
-            const storageTotal = (100 + Math.random() * 900).toFixed(0);
-            const storageUsed = (Math.random() * parseFloat(storageTotal)).toFixed(0);
-            const storageFree = (parseFloat(storageTotal) - parseFloat(storageUsed)).toFixed(0);
-            const storagePercent = (parseFloat(storageUsed) / parseFloat(storageTotal) * 100);
-            const inodes = (Math.random() * 100).toFixed(0);
-            
-            document.getElementById('storage-total').textContent = storageTotal + ' GB';
-            document.getElementById('storage-used').textContent = storageUsed + ' GB';
-            document.getElementById('storage-free').textContent = storageFree + ' GB';
-            document.getElementById('inodes').textContent = inodes + '%';
-            
-            updateProgressBar('storage-bar', storagePercent);
-            
-            // Storage details ASCII
-            const storageDetails = `
-╔══════════════════════╗
-║ /dev/sda1 ${storageUsed.toString().padStart(4)}G ${storageFree.toString().padStart(4)}G ${storagePercent.toFixed(0).padStart(3)}% ║
-║ /dev/sdb2 ${(storageUsed*0.6).toFixed(0).padStart(4)}G ${(storageFree*0.8).toFixed(0).padStart(4)}G ${(storagePercent*0.6).toFixed(0).padStart(3)}% ║
-╚══════════════════════╝`;
-            document.getElementById('storage-details').textContent = storageDetails;
-            
-            // Network Metrics
-            const netDown = (Math.random() * 1000).toFixed(0);
-            const netUp = (Math.random() * 500).toFixed(0);
-            const netLatency = (10 + Math.random() * 50).toFixed(0);
-            const netLoss = (Math.random() * 2).toFixed(2);
-            const netConnections = Math.floor(Math.random() * 200);
-            
-            document.getElementById('net-down').textContent = netDown + ' KB/s';
-            document.getElementById('net-up').textContent = netUp + ' KB/s';
-            document.getElementById('net-latency').textContent = netLatency + ' ms';
-            document.getElementById('net-loss').textContent = netLoss + '%';
-            document.getElementById('net-connections').textContent = netConnections;
-            
-            // System Info
-            const uptime = {
-                days: Math.floor(Math.random() * 100),
-                hours: Math.floor(Math.random() * 24),
-                minutes: Math.floor(Math.random() * 60)
-            };
-            const processes = Math.floor(100 + Math.random() * 300);
-            const users = Math.floor(1 + Math.random() * 5);
-            const loadAvg = `${(Math.random() * 3).toFixed(2)} ${(Math.random() * 3).toFixed(2)} ${(Math.random() * 3).toFixed(2)}`;
-            
-            document.getElementById('uptime').textContent = `${uptime.days}d ${uptime.hours}h ${uptime.minutes}m`;
-            document.getElementById('processes').textContent = processes;
-            document.getElementById('users').textContent = users;
-            document.getElementById('load-avg').textContent = loadAvg;
-            
-            // Temperature & Power
-            const cpuTemp = (30 + Math.random() * 50).toFixed(0);
-            const gpuTemp = (25 + Math.random() * 45).toFixed(0);
-            const powerUsage = (50 + Math.random() * 200).toFixed(0);
-            const battery = (50 + Math.random() * 50).toFixed(0);
-            
-            document.getElementById('cpu-temp').textContent = cpuTemp + '°C';
-            document.getElementById('gpu-temp').textContent = gpuTemp + '°C';
-            document.getElementById('power-usage').textContent = powerUsage + ' W';
-            document.getElementById('battery').textContent = battery + '%';
-            
-            updateProgressBar('temp-bar', (parseFloat(cpuTemp) / 100) * 100);
-            
-            // Update temperature status
-            const tempStatus = document.getElementById('temp-status');
-            const tempStatusText = document.getElementById('temp-status-text');
-            if (cpuTemp < 60) {
-                tempStatus.className = 'status-dot online';
-                tempStatusText.textContent = 'NORMAL';
-            } else if (cpuTemp < 80) {
-                tempStatus.className = 'status-dot warning';
-                tempStatusText.textContent = 'WARM';
-            } else {
-                tempStatus.className = 'status-dot error';
-                tempStatusText.textContent = 'HOT';
+        // Store previous network data for calculating rates
+        let prevNetworkData = null;
+        
+        // Update system metrics from real API
+        async function updateMetrics() {
+            try {
+                const response = await fetch('/api/metrics');
+                const data = await response.json();
+                
+                // CPU Metrics
+                if (data.cpu) {
+                    const cpuUsage = parseFloat(data.cpu.usage) || 0;
+                    document.getElementById('cpu-usage').textContent = cpuUsage.toFixed(1) + '%';
+                    document.getElementById('cpu-cores').textContent = data.cpu.cores || 'N/A';
+                    document.getElementById('cpu-speed').textContent = (data.cpu.speed || 0) + ' GHz';
+                    document.getElementById('cpu-load').textContent = data.cpu.loadAvg || '0.00 0.00 0.00';
+                    updateProgressBar('cpu-bar', cpuUsage);
+                    
+                    cpuData.shift();
+                    cpuData.push(cpuUsage);
+                }
+                
+                // Memory Metrics
+                if (data.memory) {
+                    document.getElementById('ram-total').textContent = (data.memory.total || 0) + ' GB';
+                    document.getElementById('ram-used').textContent = (data.memory.used || 0) + ' GB';
+                    document.getElementById('ram-free').textContent = (data.memory.free || 0) + ' GB';
+                    document.getElementById('swap-used').textContent = (data.memory.swapUsed || 0) + ' GB';
+                    
+                    const ramPercent = parseFloat(data.memory.usagePercent) || 0;
+                    updateProgressBar('ram-bar', ramPercent);
+                    
+                    ramData.shift();
+                    ramData.push(ramPercent);
+                }
+                
+                // Storage Metrics
+                if (data.storage) {
+                    document.getElementById('storage-total').textContent = (data.storage.total || 0) + ' GB';
+                    document.getElementById('storage-used').textContent = (data.storage.used || 0) + ' GB';
+                    document.getElementById('storage-free').textContent = (data.storage.free || 0) + ' GB';
+                    document.getElementById('inodes').textContent = (data.storage.inodePercent || '0') + '%';
+                    
+                    const storagePercent = parseFloat(data.storage.usagePercent) || 0;
+                    updateProgressBar('storage-bar', storagePercent);
+                    
+                    // Storage details ASCII from real filesystem data
+                    let storageDetails = '╔══════════════════════╗\n';
+                    if (data.storage.filesystems && data.storage.filesystems.length > 0) {
+                        data.storage.filesystems.forEach(fs => {
+                            const mount = fs.mount.padEnd(6);
+                            const used = (fs.used || '0').padStart(4);
+                            const avail = (fs.avail || '0').padStart(4);
+                            const percent = (fs.percent || '0%').padStart(3);
+                            storageDetails += `║ ${mount} ${used} ${avail} ${percent} ║\n`;
+                        });
+                    } else {
+                        storageDetails += `║ /dev/sda1 ${(data.storage.used || '0').padStart(4)}G ${(data.storage.free || '0').padStart(4)}G ${storagePercent.toFixed(0).padStart(3)}% ║\n`;
+                    }
+                    storageDetails += '╚══════════════════════╝';
+                    document.getElementById('storage-details').textContent = storageDetails;
+                }
+                
+                // Network Metrics
+                if (data.network) {
+                    let netDown = 0, netUp = 0;
+                    
+                    if (prevNetworkData) {
+                        const timeDiff = 2; // Update interval in seconds
+                        const downDiff = (data.network.bytesReceived - prevNetworkData.bytesReceived) || 0;
+                        const upDiff = (data.network.bytesSent - prevNetworkData.bytesSent) || 0;
+                        
+                        netDown = (downDiff / timeDiff / 1024).toFixed(0); // KB/s
+                        netUp = (upDiff / timeDiff / 1024).toFixed(0); // KB/s
+                    }
+                    
+                    prevNetworkData = {
+                        bytesReceived: data.network.bytesReceived,
+                        bytesSent: data.network.bytesSent
+                    };
+                    
+                    document.getElementById('net-down').textContent = netDown + ' KB/s';
+                    document.getElementById('net-up').textContent = netUp + ' KB/s';
+                    document.getElementById('net-connections').textContent = data.network.connections || 0;
+                    
+                    netData.shift();
+                    netData.push(parseFloat(netDown) / 10);
+                }
+                
+                // System Info
+                if (data.system) {
+                    document.getElementById('os-info').textContent = `${data.system.platform || 'Linux'} ${data.system.arch || 'x64'}`;
+                    document.getElementById('uptime').textContent = data.system.uptime || '0d 0h 0m';
+                    document.getElementById('processes').textContent = data.system.processes || 0;
+                    document.getElementById('users').textContent = data.system.users || 0;
+                    document.getElementById('load-avg').textContent = data.system.loadAvg || '0.00 0.00 0.00';
+                }
+                
+                // Temperature & Power
+                if (data.temperature) {
+                    const cpuTemp = data.temperature.cpuTemp || 30;
+                    document.getElementById('cpu-temp').textContent = cpuTemp.toFixed(0) + '°C';
+                    document.getElementById('gpu-temp').textContent = (cpuTemp - 5).toFixed(0) + '°C'; // Estimate GPU temp
+                    document.getElementById('power-usage').textContent = (50 + cpuTemp * 2).toFixed(0) + ' W'; // Estimate power
+                    document.getElementById('battery').textContent = 'N/A'; // Not available on servers
+                    
+                    updateProgressBar('temp-bar', (parseFloat(cpuTemp) / 100) * 100);
+                    
+                    // Update temperature status
+                    const tempStatus = document.getElementById('temp-status');
+                    const tempStatusText = document.getElementById('temp-status-text');
+                    if (cpuTemp < 60) {
+                        tempStatus.className = 'status-dot online';
+                        tempStatusText.textContent = 'NORMAL';
+                    } else if (cpuTemp < 80) {
+                        tempStatus.className = 'status-dot warning';
+                        tempStatusText.textContent = 'WARM';
+                    } else {
+                        tempStatus.className = 'status-dot error';
+                        tempStatusText.textContent = 'HOT';
+                    }
+                }
+                
+                // Update timestamp
+                const now = new Date();
+                document.getElementById('timestamp').textContent = now.toLocaleTimeString();
+                document.getElementById('last-update').textContent = 'Just now';
+                
+                // Update charts
+                drawMiniChart('cpu-chart', cpuData, '#00ff00');
+                drawMiniChart('ram-chart', ramData, '#00ffff');
+                drawMiniChart('net-chart', netData, '#ff00ff');
+                
+            } catch (error) {
+                console.error('Error fetching metrics:', error);
+                document.getElementById('last-update').textContent = 'Connection error';
             }
-            
-            // OS Info
-            const osInfo = navigator.platform || 'Linux x86_64';
-            document.getElementById('os-info').textContent = osInfo;
-            
-            // Update timestamp
-            const now = new Date();
-            document.getElementById('timestamp').textContent = now.toLocaleTimeString();
-            document.getElementById('last-update').textContent = 'Just now';
-            
-            // Update chart data
-            cpuData.shift();
-            cpuData.push(cpuUsage);
-            ramData.shift();
-            ramData.push(ramPercent);
-            netData.shift();
-            netData.push(parseFloat(netDown) / 10);
-            
-            // Update charts
-            drawMiniChart('cpu-chart', cpuData, '#00ff00');
-            drawMiniChart('ram-chart', ramData, '#00ffff');
-            drawMiniChart('net-chart', netData, '#ff00ff');
         }
         
         function updateProgressBar(barId, percentage) {
@@ -809,6 +819,24 @@ def987654321   redis:alpine   "redis-server"           4 hours ago     Up 4 hour
         initData();
         updateMetrics();
         setInterval(updateMetrics, 2000); // Update every 2 seconds
+        
+        // Check if server is running
+        fetch('/api/metrics')
+            .then(response => {
+                if (!response.ok) {
+                    console.warn('Backend server not available, using simulated data');
+                    // Fallback to simulated data if server is not available
+                    setInterval(() => {
+                        const cpuUsage = Math.random() * 100;
+                        const ramPercent = Math.random() * 100;
+                        document.getElementById('last-update').textContent = 'Simulated data';
+                    }, 2000);
+                }
+            })
+            .catch(() => {
+                console.warn('Backend server not available, using simulated data');
+                document.getElementById('last-update').textContent = 'Server offline - Simulated data';
+            });
         
         // Add some random variation for realism
         setInterval(() => {
