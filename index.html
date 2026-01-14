@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal Dashboard</title>
+    <title>Terminal Dashboard - Real-time System Monitor</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Fira+Code:wght@400;700&display=swap');
         
@@ -73,15 +73,15 @@
         
         .dashboard {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
             flex: 1;
             overflow-y: auto;
         }
         
         .widget {
             border: 1px solid #00ff00;
-            padding: 15px;
+            padding: 12px;
             background: rgba(0, 255, 0, 0.05);
             border-radius: 5px;
             position: relative;
@@ -107,21 +107,21 @@
         .widget-title {
             color: #ffff00;
             font-weight: 700;
-            margin-bottom: 10px;
-            font-size: 16px;
+            margin-bottom: 8px;
+            font-size: 14px;
             text-transform: uppercase;
         }
         
         .widget-content {
             color: #00ff00;
-            font-size: 14px;
-            line-height: 1.6;
+            font-size: 12px;
+            line-height: 1.4;
         }
         
         .hello-world {
             grid-column: span 2;
             text-align: center;
-            font-size: 48px;
+            font-size: 36px;
             font-weight: 700;
             color: #ff00ff;
             text-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
@@ -135,7 +135,7 @@
         
         .ascii-art {
             color: #00ffff;
-            font-size: 12px;
+            font-size: 10px;
             white-space: pre;
             line-height: 1;
         }
@@ -143,22 +143,26 @@
         .status {
             display: flex;
             justify-content: space-between;
-            margin-top: 10px;
+            margin-top: 8px;
         }
         
         .status-item {
             display: flex;
             align-items: center;
             gap: 5px;
+            font-size: 10px;
         }
         
         .status-dot {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
-            background: #00ff00;
             animation: pulse 2s infinite;
         }
+        
+        .status-dot.online { background: #00ff00; }
+        .status-dot.warning { background: #ffff00; }
+        .status-dot.error { background: #ff0000; }
         
         @keyframes pulse {
             0%, 100% { opacity: 1; }
@@ -178,8 +182,8 @@
         
         .cmd-buttons {
             display: flex;
-            gap: 10px;
-            margin-top: 10px;
+            gap: 8px;
+            margin-top: 8px;
             flex-wrap: wrap;
         }
         
@@ -187,15 +191,62 @@
             background: rgba(0, 255, 0, 0.1);
             border: 1px solid #00ff00;
             color: #00ff00;
-            padding: 5px 10px;
+            padding: 4px 8px;
             cursor: pointer;
             font-family: inherit;
+            font-size: 10px;
             transition: all 0.3s;
         }
         
         .cmd-btn:hover {
             background: rgba(0, 255, 0, 0.2);
             box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #1a1a1a;
+            border: 1px solid #00ff00;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 4px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-low { background: #00ff00; }
+        .progress-medium { background: #ffff00; }
+        .progress-high { background: #ff8800; }
+        .progress-critical { background: #ff0000; }
+        
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 3px 0;
+            font-size: 11px;
+        }
+        
+        .metric-label {
+            color: #00ffff;
+        }
+        
+        .metric-value {
+            color: #ff00ff;
+            font-weight: 700;
+        }
+        
+        .mini-chart {
+            height: 40px;
+            margin-top: 8px;
+            border: 1px solid #00ff00;
+            background: rgba(0, 255, 0, 0.02);
+            position: relative;
+            overflow: hidden;
         }
         
         ::-webkit-scrollbar {
@@ -210,6 +261,15 @@
             background: #00ff00;
             border-radius: 4px;
         }
+        
+        .timestamp {
+            position: absolute;
+            top: 10px;
+            right: 30px;
+            color: #00ffff;
+            font-size: 12px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -223,34 +283,212 @@
                 <span class="path">~$</span>
                 <span class="cursor"></span>
             </div>
+            <div class="timestamp" id="timestamp"></div>
         </div>
         
         <div class="dashboard">
             <div class="widget hello-world">
-                HELLO WORLD
+                REAL-TIME SYSTEM MONITOR
             </div>
             
             <div class="widget">
-                <div class="widget-title">System Status</div>
+                <div class="widget-title">CPU Performance</div>
                 <div class="widget-content">
-                    <div class="ascii-art">
-    ╔════════════════════════════╗
-    ║   OPencode OS v2.0.26     ║
-    ║  ========================  ║
-    ║  CPU: ████████░░ 80%       ║
-    ║  RAM: ██████░░░░ 60%       ║
-    ║  NET: ██████████ 100%      ║
-    ║  UPTIME: 42d 13h 37m       ║
-    ╚════════════════════════════╝
+                    <div class="metric-row">
+                        <span class="metric-label">Usage:</span>
+                        <span class="metric-value" id="cpu-usage">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="cpu-bar"></div>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Cores:</span>
+                        <span class="metric-value" id="cpu-cores">0</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Speed:</span>
+                        <span class="metric-value" id="cpu-speed">0.0 GHz</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Load Avg:</span>
+                        <span class="metric-value" id="cpu-load">0.00</span>
+                    </div>
+                    <div class="mini-chart" id="cpu-chart"></div>
+                </div>
+            </div>
+            
+            <div class="widget">
+                <div class="widget-title">Memory Usage</div>
+                <div class="widget-content">
+                    <div class="metric-row">
+                        <span class="metric-label">RAM Used:</span>
+                        <span class="metric-value" id="ram-used">0 GB</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="ram-bar"></div>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Total RAM:</span>
+                        <span class="metric-value" id="ram-total">0 GB</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Free RAM:</span>
+                        <span class="metric-value" id="ram-free">0 GB</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Swap Used:</span>
+                        <span class="metric-value" id="swap-used">0 GB</span>
+                    </div>
+                    <div class="mini-chart" id="ram-chart"></div>
+                </div>
+            </div>
+            
+            <div class="widget">
+                <div class="widget-title">Storage</div>
+                <div class="widget-content">
+                    <div class="metric-row">
+                        <span class="metric-label">Used:</span>
+                        <span class="metric-value" id="storage-used">0 GB</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="storage-bar"></div>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Total:</span>
+                        <span class="metric-value" id="storage-total">0 GB</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Free:</span>
+                        <span class="metric-value" id="storage-free">0 GB</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Inodes:</span>
+                        <span class="metric-value" id="inodes">0%</span>
+                    </div>
+                    <div class="ascii-art" id="storage-details"></div>
+                </div>
+            </div>
+            
+            <div class="widget">
+                <div class="widget-title">Network Activity</div>
+                <div class="widget-content">
+                    <div class="metric-row">
+                        <span class="metric-label">Download:</span>
+                        <span class="metric-value" id="net-down">0 KB/s</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Upload:</span>
+                        <span class="metric-value" id="net-up">0 KB/s</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Latency:</span>
+                        <span class="metric-value" id="net-latency">0 ms</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Packet Loss:</span>
+                        <span class="metric-value" id="net-loss">0%</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Connections:</span>
+                        <span class="metric-value" id="net-connections">0</span>
+                    </div>
+                    <div class="mini-chart" id="net-chart"></div>
+                </div>
+            </div>
+            
+            <div class="widget">
+                <div class="widget-title">System Info</div>
+                <div class="widget-content">
+                    <div class="metric-row">
+                        <span class="metric-label">OS:</span>
+                        <span class="metric-value" id="os-info">Linux</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Uptime:</span>
+                        <span class="metric-value" id="uptime">0d 0h 0m</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Processes:</span>
+                        <span class="metric-value" id="processes">0</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Users:</span>
+                        <span class="metric-value" id="users">0</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Load 1/5/15:</span>
+                        <span class="metric-value" id="load-avg">0.00 0.00 0.00</span>
                     </div>
                     <div class="status">
                         <div class="status-item">
-                            <div class="status-dot"></div>
-                            <span>ONLINE</span>
+                            <div class="status-dot online" id="status-dot"></div>
+                            <span id="status-text">ONLINE</span>
                         </div>
                         <div class="status-item">
-                            <div class="status-dot"></div>
-                            <span>OPTIMIZED</span>
+                            <span id="last-update">Just now</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="widget">
+                <div class="widget-title">Temperature & Power</div>
+                <div class="widget-content">
+                    <div class="metric-row">
+                        <span class="metric-label">CPU Temp:</span>
+                        <span class="metric-value" id="cpu-temp">0°C</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="temp-bar"></div>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">GPU Temp:</span>
+                        <span class="metric-value" id="gpu-temp">0°C</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Power Usage:</span>
+                        <span class="metric-value" id="power-usage">0 W</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Battery:</span>
+                        <span class="metric-value" id="battery">100%</span>
+                    </div>
+                    <div class="status">
+                        <div class="status-item">
+                            <div class="status-dot" id="temp-status"></div>
+                            <span id="temp-status-text">NORMAL</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="widget">
+                <div class="widget-title">MCP Tools Status</div>
+                <div class="widget-content">
+                    <div style="display: grid; gap: 6px;">
+                        <div class="metric-row">
+                            <span class="metric-label">Git Server:</span>
+                            <span class="metric-value" style="color: #00ff00;">✓ Active</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">SQLite Server:</span>
+                            <span class="metric-value" style="color: #00ff00;">✓ Active</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Fetch Server:</span>
+                            <span class="metric-value" style="color: #00ff00;">✓ Active</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">AWS CLI:</span>
+                            <span class="metric-value" style="color: #00ff00;">✓ Configured</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">LangChain:</span>
+                            <span class="metric-value" style="color: #00ff00;">✓ Ready</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">MCP Proxy:</span>
+                            <span class="metric-value" style="color: #00ff00;">✓ Running</span>
                         </div>
                     </div>
                 </div>
@@ -263,40 +501,13 @@
                         <button class="cmd-btn" onclick="runCmd('ls -la')">ls -la</button>
                         <button class="cmd-btn" onclick="runCmd('ps aux')">ps aux</button>
                         <button class="cmd-btn" onclick="runCmd('top')">top</button>
+                        <button class="cmd-btn" onclick="runCmd('htop')">htop</button>
+                        <button class="cmd-btn" onclick="runCmd('df -h')">df -h</button>
+                        <button class="cmd-btn" onclick="runCmd('free -h')">free -h</button>
                         <button class="cmd-btn" onclick="runCmd('git status')">git status</button>
-                        <button class="cmd-btn" onclick="runCmd('npm run dev')">npm run dev</button>
                         <button class="cmd-btn" onclick="runCmd('docker ps')">docker ps</button>
                     </div>
-                    <div id="output" style="margin-top: 10px; font-family: monospace;"></div>
-                </div>
-            </div>
-            
-            <div class="widget">
-                <div class="widget-title">Network Activity</div>
-                <div class="widget-content">
-                    <div class="ascii-art">
-┌─────────────────────────────────┐
-│ IN:  ▓▓▓▓▓▓▓▓░░ 1.2MB/s        │
-│ OUT: ▓▓▓▓▓▓░░░░ 0.8MB/s        │
-│ ───────────────────────────── │
-│ [████████████████████] 100%   │
-│ Packet Loss: 0.01%            │
-│ Latency: 12ms                 │
-└─────────────────────────────────┘
-                    </div>
-                </div>
-            </div>
-            
-            <div class="widget">
-                <div class="widget-title">MCP Tools Status</div>
-                <div class="widget-content">
-                    <div style="display: grid; gap: 8px;">
-                        <div>✓ Git Server: Active</div>
-                        <div>✓ SQLite Server: Active</div>
-                        <div>✓ Fetch Server: Active</div>
-                        <div>✓ AWS CLI: Configured</div>
-                        <div>✓ LangChain: Ready</div>
-                    </div>
+                    <div id="output" style="margin-top: 8px; font-family: monospace; font-size: 10px;"></div>
                 </div>
             </div>
         </div>
@@ -341,26 +552,279 @@
         
         setInterval(drawMatrix, 35);
         
+        // Data storage for charts
+        const cpuData = [];
+        const ramData = [];
+        const netData = [];
+        const maxDataPoints = 50;
+        
+        // Initialize random data
+        function initData() {
+            for(let i = 0; i < maxDataPoints; i++) {
+                cpuData.push(Math.random() * 100);
+                ramData.push(Math.random() * 100);
+                netData.push(Math.random() * 100);
+            }
+        }
+        
+        // Update system metrics
+        function updateMetrics() {
+            // CPU Metrics
+            const cpuUsage = Math.random() * 100;
+            const cpuCores = navigator.hardwareConcurrency || 4;
+            const cpuSpeed = (2.0 + Math.random() * 3.0).toFixed(1);
+            const cpuLoad = (Math.random() * 3).toFixed(2);
+            
+            document.getElementById('cpu-usage').textContent = cpuUsage.toFixed(1) + '%';
+            document.getElementById('cpu-cores').textContent = cpuCores;
+            document.getElementById('cpu-speed').textContent = cpuSpeed + ' GHz';
+            document.getElementById('cpu-load').textContent = cpuLoad;
+            
+            updateProgressBar('cpu-bar', cpuUsage);
+            
+            // Memory Metrics
+            const ramTotal = (8 + Math.random() * 24).toFixed(1);
+            const ramUsed = (Math.random() * parseFloat(ramTotal)).toFixed(1);
+            const ramFree = (parseFloat(ramTotal) - parseFloat(ramUsed)).toFixed(1);
+            const ramPercent = (parseFloat(ramUsed) / parseFloat(ramTotal) * 100);
+            const swapUsed = (Math.random() * 4).toFixed(1);
+            
+            document.getElementById('ram-total').textContent = ramTotal + ' GB';
+            document.getElementById('ram-used').textContent = ramUsed + ' GB';
+            document.getElementById('ram-free').textContent = ramFree + ' GB';
+            document.getElementById('swap-used').textContent = swapUsed + ' GB';
+            
+            updateProgressBar('ram-bar', ramPercent);
+            
+            // Storage Metrics
+            const storageTotal = (100 + Math.random() * 900).toFixed(0);
+            const storageUsed = (Math.random() * parseFloat(storageTotal)).toFixed(0);
+            const storageFree = (parseFloat(storageTotal) - parseFloat(storageUsed)).toFixed(0);
+            const storagePercent = (parseFloat(storageUsed) / parseFloat(storageTotal) * 100);
+            const inodes = (Math.random() * 100).toFixed(0);
+            
+            document.getElementById('storage-total').textContent = storageTotal + ' GB';
+            document.getElementById('storage-used').textContent = storageUsed + ' GB';
+            document.getElementById('storage-free').textContent = storageFree + ' GB';
+            document.getElementById('inodes').textContent = inodes + '%';
+            
+            updateProgressBar('storage-bar', storagePercent);
+            
+            // Storage details ASCII
+            const storageDetails = `
+╔══════════════════════╗
+║ /dev/sda1 ${storageUsed.toString().padStart(4)}G ${storageFree.toString().padStart(4)}G ${storagePercent.toFixed(0).padStart(3)}% ║
+║ /dev/sdb2 ${(storageUsed*0.6).toFixed(0).padStart(4)}G ${(storageFree*0.8).toFixed(0).padStart(4)}G ${(storagePercent*0.6).toFixed(0).padStart(3)}% ║
+╚══════════════════════╝`;
+            document.getElementById('storage-details').textContent = storageDetails;
+            
+            // Network Metrics
+            const netDown = (Math.random() * 1000).toFixed(0);
+            const netUp = (Math.random() * 500).toFixed(0);
+            const netLatency = (10 + Math.random() * 50).toFixed(0);
+            const netLoss = (Math.random() * 2).toFixed(2);
+            const netConnections = Math.floor(Math.random() * 200);
+            
+            document.getElementById('net-down').textContent = netDown + ' KB/s';
+            document.getElementById('net-up').textContent = netUp + ' KB/s';
+            document.getElementById('net-latency').textContent = netLatency + ' ms';
+            document.getElementById('net-loss').textContent = netLoss + '%';
+            document.getElementById('net-connections').textContent = netConnections;
+            
+            // System Info
+            const uptime = {
+                days: Math.floor(Math.random() * 100),
+                hours: Math.floor(Math.random() * 24),
+                minutes: Math.floor(Math.random() * 60)
+            };
+            const processes = Math.floor(100 + Math.random() * 300);
+            const users = Math.floor(1 + Math.random() * 5);
+            const loadAvg = `${(Math.random() * 3).toFixed(2)} ${(Math.random() * 3).toFixed(2)} ${(Math.random() * 3).toFixed(2)}`;
+            
+            document.getElementById('uptime').textContent = `${uptime.days}d ${uptime.hours}h ${uptime.minutes}m`;
+            document.getElementById('processes').textContent = processes;
+            document.getElementById('users').textContent = users;
+            document.getElementById('load-avg').textContent = loadAvg;
+            
+            // Temperature & Power
+            const cpuTemp = (30 + Math.random() * 50).toFixed(0);
+            const gpuTemp = (25 + Math.random() * 45).toFixed(0);
+            const powerUsage = (50 + Math.random() * 200).toFixed(0);
+            const battery = (50 + Math.random() * 50).toFixed(0);
+            
+            document.getElementById('cpu-temp').textContent = cpuTemp + '°C';
+            document.getElementById('gpu-temp').textContent = gpuTemp + '°C';
+            document.getElementById('power-usage').textContent = powerUsage + ' W';
+            document.getElementById('battery').textContent = battery + '%';
+            
+            updateProgressBar('temp-bar', (parseFloat(cpuTemp) / 100) * 100);
+            
+            // Update temperature status
+            const tempStatus = document.getElementById('temp-status');
+            const tempStatusText = document.getElementById('temp-status-text');
+            if (cpuTemp < 60) {
+                tempStatus.className = 'status-dot online';
+                tempStatusText.textContent = 'NORMAL';
+            } else if (cpuTemp < 80) {
+                tempStatus.className = 'status-dot warning';
+                tempStatusText.textContent = 'WARM';
+            } else {
+                tempStatus.className = 'status-dot error';
+                tempStatusText.textContent = 'HOT';
+            }
+            
+            // OS Info
+            const osInfo = navigator.platform || 'Linux x86_64';
+            document.getElementById('os-info').textContent = osInfo;
+            
+            // Update timestamp
+            const now = new Date();
+            document.getElementById('timestamp').textContent = now.toLocaleTimeString();
+            document.getElementById('last-update').textContent = 'Just now';
+            
+            // Update chart data
+            cpuData.shift();
+            cpuData.push(cpuUsage);
+            ramData.shift();
+            ramData.push(ramPercent);
+            netData.shift();
+            netData.push(parseFloat(netDown) / 10);
+            
+            // Update charts
+            drawMiniChart('cpu-chart', cpuData, '#00ff00');
+            drawMiniChart('ram-chart', ramData, '#00ffff');
+            drawMiniChart('net-chart', netData, '#ff00ff');
+        }
+        
+        function updateProgressBar(barId, percentage) {
+            const bar = document.getElementById(barId);
+            bar.style.width = percentage + '%';
+            
+            // Color based on percentage
+            bar.className = 'progress-fill';
+            if (percentage < 50) {
+                bar.classList.add('progress-low');
+            } else if (percentage < 75) {
+                bar.classList.add('progress-medium');
+            } else if (percentage < 90) {
+                bar.classList.add('progress-high');
+            } else {
+                bar.classList.add('progress-critical');
+            }
+        }
+        
+        function drawMiniChart(canvasId, data, color) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw chart
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            
+            const stepX = canvas.width / (data.length - 1);
+            const maxValue = Math.max(...data, 100);
+            
+            for (let i = 0; i < data.length; i++) {
+                const x = i * stepX;
+                const y = canvas.height - (data[i] / maxValue * canvas.height);
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            
+            ctx.stroke();
+            
+            // Fill area under line
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.closePath();
+            ctx.fillStyle = color + '20';
+            ctx.fill();
+        }
+        
         // Command simulation
         function runCmd(cmd) {
             const output = document.getElementById('output');
             const responses = {
-                'ls -la': 'drwxr-xr-x  12 user staff  384 Jan 14 10:30 .\ndrwxr-xr-x   3 root  staff   96 Jan 14 09:00 ..\n-rw-r--r--   1 user staff  2.1K Jan 14 10:30 index.html',
-                'ps aux': 'USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\nuser        1234  0.0  0.1  42328  3452 pts/0    Ss   10:30   0:00 -bash',
-                'top': 'Tasks: 156 total,   2 running, 154 sleeping,   0 stopped,   0 zombie\n%Cpu(s): 12.5 us,  5.0 sy,  0.0 ni, 80.0 id,  2.5 wa',
-                'git status': 'On branch main\nnothing to commit, working tree clean',
-                'npm run dev': '> project@1.0.0 dev\n> vite\nVITE v4.0.0 ready in 312 ms\n➜  Local:   http://localhost:5173/',
-                'docker ps': 'CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS     NAMES\nabc123456789   nginx:latest   "/docker-entrypoint.…"   2 hours ago     Up 2 hours     80/tcp    web-server'
+                'ls -la': `drwxr-xr-x  12 user staff  384 Jan ${14} 10:30 .
+drwxr-xr-x   3 root  staff   96 Jan ${14} 09:00 ..
+-rw-r--r--   1 user staff  5.2K Jan ${14} 10:30 index.html
+drwxr-xr-x   2 user staff   64 Jan ${14} 09:15 css
+drwxr-xr-x   2 user staff   64 Jan ${14} 09:15 js`,
+                'ps aux': `USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root           1  0.0  0.1   2348  1232 ?        Ss   09:00   0:01 /sbin/init
+user        1234  2.5  1.2  42328  8452 pts/0    S+   10:30   0:15 -bash
+user        5678  1.8  0.8  28456  5678 pts/1    S+   10:45   0:08 npm run dev`,
+                'top': `Tasks: 156 total,   2 running, 154 sleeping,   0 stopped,   0 zombie
+%Cpu(s): 12.5 us,  5.0 sy,  0.0 ni, 80.0 id,  2.5 wa,  0.0 hi,  0.0 si,  0.0 st
+MiB Mem :   8192.0 total,   2048.0 free,   4096.0 used,   2048.0 buff/cache`,
+                'htop': `  1[                                                                      0.0%]     Tasks: 45, 2 thr; 2 running
+  2[                                                                      0.0%]     Load average: 1.25 1.50 1.75 
+  Mem[||||||||||||||||||||||||||||||||||||||||||||                      6.1G/8.0G]     Uptime: 42d 13h 37m`,
+                'df -h': `Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1        100G   45G   55G  45% /
+/dev/sdb2        500G  200G  300G  40% /home
+tmpfs           4.0G  1.2G  2.8G  30% /tmp`,
+                'free -h': `              total        used        free      shared  buff/cache   available
+Mem:           8.0G        4.1G        2.0G        256M        1.9G        3.5G
+Swap:          4.0G        2.5G        1.5G`,
+                'git status': `On branch main
+Your branch is up to date with 'origin/main'.
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   index.html
+no changes added to commit (use "git add" and/or "git commit -a")`,
+                'docker ps': `CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                    NAMES
+abc123456789   nginx:latest   "/docker-entrypoint.…"   2 hours ago     Up 2 hours     80/tcp->8080/tcp         web-server
+def987654321   redis:alpine   "redis-server"           4 hours ago     Up 4 hours     6379/tcp                 redis-cache`
             };
             
-            output.innerHTML = `<div style="color: #ffff00;">$ ${cmd}</div><div style="color: #00ff00;">${responses[cmd] || 'Command executed successfully'}</div>`;
+            output.innerHTML = `<div style="color: #ffff00;">$ ${cmd}</div><div style="color: #00ff00; white-space: pre-line;">${responses[cmd] || 'Command executed successfully'}</div>`;
         }
         
-        // Resize canvas on window resize
+        // Window resize handler
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            
+            // Redraw charts with new dimensions
+            drawMiniChart('cpu-chart', cpuData, '#00ff00');
+            drawMiniChart('ram-chart', ramData, '#00ffff');
+            drawMiniChart('net-chart', netData, '#ff00ff');
         });
+        
+        // Initialize and start updates
+        initData();
+        updateMetrics();
+        setInterval(updateMetrics, 2000); // Update every 2 seconds
+        
+        // Add some random variation for realism
+        setInterval(() => {
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+            const random = Math.random();
+            
+            if (random > 0.95) {
+                statusDot.className = 'status-dot warning';
+                statusText.textContent = 'BUSY';
+                setTimeout(() => {
+                    statusDot.className = 'status-dot online';
+                    statusText.textContent = 'ONLINE';
+                }, 3000);
+            }
+        }, 5000);
     </script>
 </body>
 </html>
