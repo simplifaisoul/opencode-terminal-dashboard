@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Dashboard</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Fira+Code:wght@400;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0a0a0a;
+            color: #00ff00;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .terminal {
+            height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #00ff00;
+            padding-bottom: 10px;
+        }
+        
+        .user-prompt {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .user-icon {
+            color: #ff00ff;
+            font-size: 24px;
+        }
+        
+        .path {
+            color: #00ffff;
+        }
+        
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 20px;
+            background: #00ff00;
+            animation: blink 1s infinite;
+            margin-left: 5px;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .widget {
+            border: 1px solid #00ff00;
+            padding: 15px;
+            background: rgba(0, 255, 0, 0.05);
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .widget::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff00, transparent);
+            animation: scan 3s linear infinite;
+        }
+        
+        @keyframes scan {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .widget-title {
+            color: #ffff00;
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-size: 16px;
+            text-transform: uppercase;
+        }
+        
+        .widget-content {
+            color: #00ff00;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .hello-world {
+            grid-column: span 2;
+            text-align: center;
+            font-size: 48px;
+            font-weight: 700;
+            color: #ff00ff;
+            text-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 0 0 20px rgba(255, 0, 255, 0.8); }
+            to { text-shadow: 0 0 30px rgba(255, 0, 255, 1), 0 0 40px rgba(0, 255, 255, 0.8); }
+        }
+        
+        .ascii-art {
+            color: #00ffff;
+            font-size: 12px;
+            white-space: pre;
+            line-height: 1;
+        }
+        
+        .status {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff00;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .matrix-rain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.1;
+            z-index: -1;
+        }
+        
+        .cmd-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .cmd-btn {
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+        
+        .cmd-btn:hover {
+            background: rgba(0, 255, 0, 0.2);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #00ff00;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <canvas class="matrix-rain" id="matrix"></canvas>
+    
+    <div class="terminal">
+        <div class="header">
+            <div class="user-prompt">
+                <span class="user-icon">⚡</span>
+                <span>user@opencode:</span>
+                <span class="path">~$</span>
+                <span class="cursor"></span>
+            </div>
+        </div>
+        
+        <div class="dashboard">
+            <div class="widget hello-world">
+                HELLO WORLD
+            </div>
+            
+            <div class="widget">
+                <div class="widget-title">System Status</div>
+                <div class="widget-content">
+                    <div class="ascii-art">
+    ╔════════════════════════════╗
+    ║   OPencode OS v2.0.26     ║
+    ║  ========================  ║
+    ║  CPU: ████████░░ 80%       ║
+    ║  RAM: ██████░░░░ 60%       ║
+    ║  NET: ██████████ 100%      ║
+    ║  UPTIME: 42d 13h 37m       ║
+    ╚════════════════════════════╝
+                    </div>
+                    <div class="status">
+                        <div class="status-item">
+                            <div class="status-dot"></div>
+                            <span>ONLINE</span>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-dot"></div>
+                            <span>OPTIMIZED</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="widget">
+                <div class="widget-title">Terminal Commands</div>
+                <div class="widget-content">
+                    <div class="cmd-buttons">
+                        <button class="cmd-btn" onclick="runCmd('ls -la')">ls -la</button>
+                        <button class="cmd-btn" onclick="runCmd('ps aux')">ps aux</button>
+                        <button class="cmd-btn" onclick="runCmd('top')">top</button>
+                        <button class="cmd-btn" onclick="runCmd('git status')">git status</button>
+                        <button class="cmd-btn" onclick="runCmd('npm run dev')">npm run dev</button>
+                        <button class="cmd-btn" onclick="runCmd('docker ps')">docker ps</button>
+                    </div>
+                    <div id="output" style="margin-top: 10px; font-family: monospace;"></div>
+                </div>
+            </div>
+            
+            <div class="widget">
+                <div class="widget-title">Network Activity</div>
+                <div class="widget-content">
+                    <div class="ascii-art">
+┌─────────────────────────────────┐
+│ IN:  ▓▓▓▓▓▓▓▓░░ 1.2MB/s        │
+│ OUT: ▓▓▓▓▓▓░░░░ 0.8MB/s        │
+│ ───────────────────────────── │
+│ [████████████████████] 100%   │
+│ Packet Loss: 0.01%            │
+│ Latency: 12ms                 │
+└─────────────────────────────────┘
+                    </div>
+                </div>
+            </div>
+            
+            <div class="widget">
+                <div class="widget-title">MCP Tools Status</div>
+                <div class="widget-content">
+                    <div style="display: grid; gap: 8px;">
+                        <div>✓ Git Server: Active</div>
+                        <div>✓ SQLite Server: Active</div>
+                        <div>✓ Fetch Server: Active</div>
+                        <div>✓ AWS CLI: Configured</div>
+                        <div>✓ LangChain: Ready</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Matrix rain effect
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|`]}";
+        const matrixArray = matrix.split("");
+        
+        const fontSize = 10;
+        const columns = canvas.width / fontSize;
+        
+        const drops = [];
+        for(let x = 0; x < columns; x++) {
+            drops[x] = 1;
+        }
+        
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#00ff00';
+            ctx.font = fontSize + 'px monospace';
+            
+            for(let i = 0; i < drops.length; i++) {
+                const text = matrixArray[Math.floor(Math.random() * matrixArray.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                
+                if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        
+        setInterval(drawMatrix, 35);
+        
+        // Command simulation
+        function runCmd(cmd) {
+            const output = document.getElementById('output');
+            const responses = {
+                'ls -la': 'drwxr-xr-x  12 user staff  384 Jan 14 10:30 .\ndrwxr-xr-x   3 root  staff   96 Jan 14 09:00 ..\n-rw-r--r--   1 user staff  2.1K Jan 14 10:30 index.html',
+                'ps aux': 'USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\nuser        1234  0.0  0.1  42328  3452 pts/0    Ss   10:30   0:00 -bash',
+                'top': 'Tasks: 156 total,   2 running, 154 sleeping,   0 stopped,   0 zombie\n%Cpu(s): 12.5 us,  5.0 sy,  0.0 ni, 80.0 id,  2.5 wa',
+                'git status': 'On branch main\nnothing to commit, working tree clean',
+                'npm run dev': '> project@1.0.0 dev\n> vite\nVITE v4.0.0 ready in 312 ms\n➜  Local:   http://localhost:5173/',
+                'docker ps': 'CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS     NAMES\nabc123456789   nginx:latest   "/docker-entrypoint.…"   2 hours ago     Up 2 hours     80/tcp    web-server'
+            };
+            
+            output.innerHTML = `<div style="color: #ffff00;">$ ${cmd}</div><div style="color: #00ff00;">${responses[cmd] || 'Command executed successfully'}</div>`;
+        }
+        
+        // Resize canvas on window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
